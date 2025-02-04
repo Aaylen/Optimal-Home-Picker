@@ -1,0 +1,21 @@
+.container {
+  display: flex;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  overflow-y: hidden;
+}
+
+.leftPanel {
+  height: 100%;
+  overflow: auto;
+  min-width: 20%;
+  max-width: 80%;
+}
+
+.rightPanel {
+  height: 100%;
+  overflow: auto;
+  min-width: 20%;
+  max-width: 80%;
+}

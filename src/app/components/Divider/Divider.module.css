@@ -1,0 +1,16 @@
+.divider {
+    width: 8px;
+    background-color: #e0e0e0;
+    cursor: col-resize;
+    height: 100%;
+    user-select: none;
+    transition: background-color 0.2s;
+  }
+  
+  .divider:hover {
+    background-color: #2196F3;
+  }
+  
+  .dragging {
+    background-color: #1976D2 !important;
+  }
