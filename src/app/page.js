@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react';
 import styles from './page.module.css';
 import Map from './components/Map/map';
-import SearchComponent from './components/search';
+import SearchComponent from './components/Search/search';
 import Divider from './components/Divider/Divider';
 
 export default function Home() {
@@ -15,7 +15,7 @@ export default function Home() {
   };
 
   return (
-    <main className={styles.container} ref={containerRef}>
+    <main className={styles.main} ref={containerRef}>
       <div style={{ width: `${leftWidth}%` }} className={styles.leftPanel}>
         <SearchComponent />
       </div>
@@ -24,7 +24,6 @@ export default function Home() {
         onResize={handleResize}
         containerRef={containerRef}
       />
-
       <div style={{ width: `${100 - leftWidth}%` }} className={styles.rightPanel}>
         <Map />
       </div>

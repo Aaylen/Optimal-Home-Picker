@@ -24,17 +24,24 @@ const Map = () => {
     setMap(null);
   };
 
+  const mapOptions = {
+    streetViewControl: false,
+    // mapTypeControlOptions: {
+    //   position: window.google.maps.ControlPosition.BOTTOM_CENTER // Move map type control to the bottom center
+    // }
+  };
+
   return (
     <div style={{ height: '100%', width: '100%' , padding: '0', margin: '0' }}>
-      <LoadScript googleMapsApiKey={process.env.GOOGLE_MAPS_API_KEY}>
+      <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
         <GoogleMap
           mapContainerStyle={{ width: '100%', height: '100%' }}
           center={center}
           zoom={zoom}
           onLoad={onLoad}
           onUnmount={onUnmount}
+          options={mapOptions}
         >
-          <Marker position={center} />
         </GoogleMap>
       </LoadScript>
     </div>

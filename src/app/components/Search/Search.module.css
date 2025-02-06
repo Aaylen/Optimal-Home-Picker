@@ -1,0 +1,12 @@
+.main{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: black;
+}
+.searchBar{
+    position: relative;
+    top: 10%;
+    left: 50%;
+}

@@ -1,9 +1,10 @@
-.container {
+.main {
   display: flex;
   height: 100vh;
   position: relative;
   overflow: hidden;
   overflow-y: hidden;
+  background-color: #16202B;
 }
 
 .leftPanel {
