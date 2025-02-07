@@ -1,0 +1,99 @@
+/* poi.module.css */
+.poiContainer {
+    border-radius: 25px;
+    padding: 10px;
+    margin-top: 20px;
+    width: 100%;
+    height: 100%;
+    border: 1px solid white;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: white;
+}
+
+.poiContainer table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.poiContainer thead th {
+    position: sticky;
+    top: 0;
+    
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.poiContainer tbody {
+    flex-grow: 1;
+    overflow-y: auto;
+    display: block;
+}
+
+.poiContainer tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.poiContainer td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.poiContainer input[type="text"] {
+    width: 100%;
+    padding: 4px;
+    box-sizing: border-box;
+    background: transparent;
+    border: 1px solid white;
+    color: white;
+}
+
+.poiContainer input[type="color"] {
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    width: 100%;
+    height: 24px;
+}
+
+.deleteButton {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0 5px;
+}
+
+.deleteButton:hover {
+    color: #ff4444;
+}
+
+.tempInput {
+    opacity: 0.7;
+}
+
+/* Define column sizes */
+.colColor {
+    width: 5%;
+}
+
+.colLocation {
+    width: 65%;
+}
+
+.colDistance {
+    width: 25%;
+}
+
+.colActions {
+    width: 5%;
+}

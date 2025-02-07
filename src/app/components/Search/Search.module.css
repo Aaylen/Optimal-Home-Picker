@@ -12,10 +12,9 @@
 }
 
 .searchBar {
-    margin-top: 10px; /* Add some space above the search bar */
     background-color: #16202B; /* Ensure the background color is set correctly */
     border: 1px solid white; /* Ensure the border is always visible */
-    border-radius: 5px;
+    border-radius: 15px;
     color: white; /* Set text color for better visibility */
     padding: 10px; /* Add padding for better appearance */
     width: 100%; /* Make the search bar take the full width of its container */
