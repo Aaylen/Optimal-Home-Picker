@@ -6,7 +6,8 @@ import POI from '../POIs/poi';
 const SearchComponent = ({ onPlaceSelected }) => {
   const searchBoxRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
-  const [CurrentLocation, setCurrentLocation] = useState({ lat: 37.7749, lng: -122.4194 });
+  const [CurrentAddress, setCurrentAddress] = useState('');
+  const [CurrentLocation, setCurrentLocation] = useState({ lat: 37.7749, lng: -122.4194 }); // Default to San Francisco
 
   const onLoad = (ref) => {
     searchBoxRef.current = ref;
@@ -19,7 +20,8 @@ const SearchComponent = ({ onPlaceSelected }) => {
       const location = place.geometry.location;
       setInputValue(place.formatted_address);
       onPlaceSelected({ lat: location.lat(), lng: location.lng() });
-      setCurrentLocation({lat: location.lat(), lng: location.lng()});
+      setCurrentAddress(place.formatted_address);
+      setCurrentLocation({ lat: location.lat(), lng: location.lng() });
     }
   };
 
@@ -29,7 +31,8 @@ const SearchComponent = ({ onPlaceSelected }) => {
       if (status === 'OK' && results && results.length > 0) {
         const location = results[0].geometry.location;
         setInputValue(results[0].formatted_address);
-        setCurrentLocation({lat: location.lat(), lng: location.lng()});
+        setCurrentAddress(results[0].formatted_address);
+        setCurrentLocation({ lat: location.lat(), lng: location.lng() });
         onPlaceSelected({ lat: location.lat(), lng: location.lng() });
       } else {
         console.error('Geocode was not successful:', status);
@@ -44,8 +47,8 @@ const SearchComponent = ({ onPlaceSelected }) => {
       if (places && places.length > 0) {
         const place = places[0];
         setInputValue(place.formatted_address);
-        setCurrentLocation({lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng()});
+        setCurrentAddress(place.formatted_address);
+        setCurrentLocation({ lat: place.geometry.location.lat(), lng: place.geometry.location.lng() });
         onPlaceSelected({
           lat: place.geometry.location.lat(),
           lng: place.geometry.location.lng(),
@@ -76,7 +79,7 @@ return (
                 </div>
             </StandaloneSearchBox>
         </div>
-        <POI CurrentLocation={CurrentLocation} />
+        <POI CurrentAddress={CurrentAddress} CurrentLocation={CurrentLocation} />
     </div>
 );
 };
