@@ -3,13 +3,15 @@ import { StandaloneSearchBox } from '@react-google-maps/api';
 import styles from './poi.module.css';
 
 const DEFAULT_COLORS = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
+const categorySuggestions = ["Grocery Stores", "Schools", "Parks", "Convenience Stores"];
 
-const POI = ({CurrentAddress, CurrentLocation }) => {
-  const [rows, setRows] = useState([{ id: 1, address: '', distance: '', color: '#FF0000' }]);
-  const [isCategorySearch, setIsCategorySearch] = useState(false);
+const POI = ({ CurrentAddress, CurrentLocation }) => {
+  const [rows, setRows] = useState([{ id: 1, address: '', distance: '', color: '#FF0000', isCategorySearch: true }]);
   const poiContainerRef = useRef(null);
   const nextId = useRef(2);
-  const searchBoxRefs = useRef({});
+  const searchBoxRef = useRef(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     console.log('CurrentLocation:', CurrentLocation);
@@ -25,6 +27,19 @@ const POI = ({CurrentAddress, CurrentLocation }) => {
 
   const handleAddressChange = (id, address) => {
     setRows(rows.map(row => row.id === id ? { ...row, address } : row));
+    const currentRow = rows.find(row => row.id === id);
+    if (currentRow.isCategorySearch) {
+      const filteredSuggestions = categorySuggestions.filter(suggestion =>
+        suggestion.toLowerCase().includes(address.toLowerCase())
+      );
+      setSuggestions(filteredSuggestions);
+      setShowSuggestions(filteredSuggestions.length > 0);
+    }
+  };
+
+  const handleSuggestionClick = (id, suggestion) => {
+    handleAddressChange(id, suggestion);
+    setShowSuggestions(false);
   };
 
   const handleColorChange = (id, color) => {
@@ -35,14 +50,26 @@ const POI = ({CurrentAddress, CurrentLocation }) => {
     setRows(rows.filter(row => row.id !== id));
   };
 
+  const onLoad = (ref) => {
+    searchBoxRef.current = ref;
+  };
+
+  const onPlacesChanged = (row) => {
+    const places = searchBoxRef.current?.getPlaces();
+    if (places?.[0]?.formatted_address) {
+      handleAddressSelected(row.id, places[0].formatted_address);
+    }
+  };
+
   const handleAddressSelected = (id, address) => {
     const newRows = rows.map(row => row.id === id ? { ...row, address } : row);
-    if (id === rows[rows.length - 1].id && !isCategorySearch) {
+    if (id === rows[rows.length - 1].id) {
       setRows([...newRows, {
         id: nextId.current++,
         address: '',
         distance: '',
-        color: getNextColor(newRows)
+        color: getNextColor(newRows),
+        isCategorySearch: true
       }]);
     } else {
       setRows(newRows);
@@ -63,13 +90,11 @@ const POI = ({CurrentAddress, CurrentLocation }) => {
   
       distanceService.getDistanceMatrix(request, (response, status) => {
         if (status === google.maps.DistanceMatrixStatus.OK) {
-          // Extract distances and pair with places
           const distances = response.rows[0].elements.map((element, index) => ({
             place: places[index],
-            distance: element.distance.value, // Distance in meters
+            distance: element.distance.value,
           }));
   
-          // Sort places by actual driving distance
           distances.sort((a, b) => a.distance - b.distance);
           resolve(distances.map(d => d.place));
         } else {
@@ -109,8 +134,18 @@ const POI = ({CurrentAddress, CurrentLocation }) => {
         category,
         timestamp: new Date().toISOString(),
         origin: CurrentAddress,
-        places: sortedPlaces
+        places: 
+          sortedPlaces.map(place => ({
+          name: place.name,
+          address: place.vicinity,
+          location: place.geometry.location,
+          rating: place.rating,
+          userRatingsTotal: place.user_ratings_total,
+          placeId: place.place_id
+        }))
       };
+
+      handleAddressSelected(id, sortedPlaces[0].name);
 
       console.log('Category search results:', categoryResults);
       
@@ -119,19 +154,13 @@ const POI = ({CurrentAddress, CurrentLocation }) => {
     }
   };
 
+  const handleSwitchSearchMode = (id) => {
+    setRows(rows.map(row => row.id === id ? { ...row, isCategorySearch: !row.isCategorySearch } : row));
+    setShowSuggestions(false);
+  };
+
   return (
     <div className={styles.poiContainer} ref={poiContainerRef}>
-      <div className={styles.searchToggle}>
-        <label>
-          <input
-            type="checkbox"
-            checked={isCategorySearch}
-            onChange={() => setIsCategorySearch(!isCategorySearch)}
-          />
-          Category Search
-        </label>
-      </div>
-
       <table className={styles.poiTable}>
         <thead>
           <tr>
@@ -152,43 +181,50 @@ const POI = ({CurrentAddress, CurrentLocation }) => {
                 />
               </td>
               <td className={styles.colLocation}>
-                {isCategorySearch ? (
-                  <input
-                    type="text"
-                    placeholder="Enter category..."
-                    value={row.address}
-                    onChange={(e) => handleAddressChange(row.id, e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleCategorySearch(row.id, row.address)}
-                    className={styles.addressInput}
-                  />
-                ) : (
-                  <StandaloneSearchBox
-                    onLoad={(ref) => {
-                      searchBoxRefs.current[row.id] = ref;
-                      ref.setBounds(new window.google.maps.Circle({
-                        center: CurrentLocation,
-                        radius: 1
-                      }).getBounds());
-                      ref.setOptions({ 
-                        strictBounds: true,
-                        types: ['address']
-                      });
-                    }}
-                    onPlacesChanged={() => {
-                      const places = searchBoxRefs.current[row.id]?.getPlaces();
-                      if (places?.[0]?.formatted_address) {
-                        handleAddressSelected(row.id, places[0].formatted_address);
-                      }
-                    }}
-                  >
+                {row.isCategorySearch ? (
+                  <div className={styles.inputContainer}>
                     <input
                       type="text"
-                      placeholder="Enter address..."
+                      placeholder="Enter category..."
                       value={row.address}
                       onChange={(e) => handleAddressChange(row.id, e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleCategorySearch(row.id, row.address)}
                       className={styles.addressInput}
                     />
-                  </StandaloneSearchBox>
+                    <button 
+                      onClick={() => handleSwitchSearchMode(row.id)} 
+                      className={styles.searchButton}
+                      title='Search by Address'
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="white" strokeOpacity="0.45" width="20" height="20">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                      </svg>
+                    </button>
+                  </div>
+                
+                ) : (
+                  <div className={styles.inputContainer}>
+                    <StandaloneSearchBox onLoad={onLoad} onPlacesChanged={() => onPlacesChanged(row)}>
+                      <div className={styles.inputWrapper}>
+                        <input
+                          type="text"
+                          placeholder="Enter address..."
+                          value={row.address}
+                          onChange={(e) => handleAddressChange(row.id, e.target.value)}
+                          className={styles.addressInput}
+                        />
+                        <button 
+                          onClick={() => handleSwitchSearchMode(row.id)} 
+                          className={styles.searchButtonAdress}
+                          title='Search by Category'
+                        >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="black" width="20" height="20">
+                        <path strokeWidth={1.5} stroke="white" strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                      </svg>
+                        </button>
+                      </div>
+                    </StandaloneSearchBox>
+                  </div>
                 )}
               </td>
               <td className={styles.colDistance}>{row.distance}</td>

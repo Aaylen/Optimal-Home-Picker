@@ -6,8 +6,8 @@ import POI from '../POIs/poi';
 const SearchComponent = ({ onPlaceSelected }) => {
   const searchBoxRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
-  const [CurrentAddress, setCurrentAddress] = useState('');
-  const [CurrentLocation, setCurrentLocation] = useState({ lat: 37.7749, lng: -122.4194 }); // Default to San Francisco
+  const [CurrentAddress, setCurrentAddress] = useState('500 El Camino Real, Santa Clara, CA 95053');
+  const [CurrentLocation, setCurrentLocation] = useState({ lat: 37.3496, lng: -121.9390 }); // Default to Santa Clara University
 
   const onLoad = (ref) => {
     searchBoxRef.current = ref;

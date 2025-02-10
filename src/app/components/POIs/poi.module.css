@@ -49,6 +49,7 @@
 .poiContainer input[type="text"] {
     width: 100%;
     padding: 4px;
+    padding-right: 30px;
     box-sizing: border-box;
     background: transparent;
     border: 1px solid white;
@@ -97,3 +98,44 @@
 .colActions {
     width: 5%;
 }
+
+.inputContainer {
+    position: relative;
+    width: 100%;
+}
+
+.searchButton {
+    position: absolute;
+    right: 0px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    justify-content: center;
+    height: 100%;
+}
+
+.searchButton svg {
+    color: white;
+}
+
+/* .searchButton:hover svg {
+    stroke-opacity: 0.6;
+}     */
+
+.searchButtonAdress{
+    position: absolute;
+    right: 0px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    justify-content: center;
+    height: 100%;
+}
+
+.searchButtonAdress svg {
+    color: white;
+}
+
+/* .searchButtonAdress:hover svg {
+    stroke-opacity: 0.45;
+} */
