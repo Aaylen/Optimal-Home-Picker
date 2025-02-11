@@ -8,7 +8,12 @@ const SearchComponent = ({ onPlaceSelected }) => {
   const [inputValue, setInputValue] = useState('');
   const [CurrentAddress, setCurrentAddress] = useState('500 El Camino Real, Santa Clara, CA 95053');
   const [CurrentLocation, setCurrentLocation] = useState({ lat: 37.3496, lng: -121.9390 }); // Default to Santa Clara University
+  const [categoryResults, setCategoryResults] = useState([]);
 
+  const handleCategoryResults = (results) => {
+    setCategoryResults(results);
+  };
+  
   const onLoad = (ref) => {
     searchBoxRef.current = ref;
   };
@@ -79,7 +84,7 @@ return (
                 </div>
             </StandaloneSearchBox>
         </div>
-        <POI CurrentAddress={CurrentAddress} CurrentLocation={CurrentLocation} />
+        <POI CurrentAddress={CurrentAddress} CurrentLocation={CurrentLocation} onCategoryResults={handleCategoryResults}/>
     </div>
 );
 };
