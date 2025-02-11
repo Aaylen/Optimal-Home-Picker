@@ -4,15 +4,13 @@ import { POIContext } from '../../context/POIContext.js';
 import styles from './poi.module.css';
 
 const DEFAULT_COLORS = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
-// const categorySuggestions = ["Grocery Stores", "Schools", "Parks", "Convenience Stores"];
+
 
 const POI = ({ CurrentAddress, CurrentLocation }) => {
   const [rows, setRows] = useState([{ id: 1, address: '', distance: '', color: '#FF0000', isCategorySearch: true, places: null, selectedPlaceID: null }]);
   const poiContainerRef = useRef(null);
   const nextId = useRef(2);
   const searchBoxRef = useRef(null);
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const {setCategorySearch} = useContext(POIContext);
   const {selectedPOI} = useContext(POIContext);
   const {setSelectedPOI} = useContext(POIContext);
@@ -43,20 +41,6 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
 
   const handleAddressChange = (id, address) => {
     setRows(rows.map(row => row.id === id ? { ...row, address } : row));
-    // const currentRow = rows.find(row => row.id === id);
-    // if (currentRow.isCategorySearch) {
-    //   const filteredSuggestions = categorySuggestions.filter(suggestion =>
-    //     suggestion.toLowerCase().includes(address.toLowerCase())
-    //   );
-    //   setSuggestions(filteredSuggestions);
-    //   setShowSuggestions(filteredSuggestions.length > 0);
-    // }
-  };
-
-  const handleSuggestionClick = (id, suggestion) => {
-    handleAddressChange(id, suggestion);
-    handleCategorySearch(id, suggestion);
-    setShowSuggestions(false);
   };
 
   const handleColorChange = (id, color) => {
@@ -150,8 +134,6 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
         });
       });
 
-      
-
       // Sort by actual driving distance
       const sortedPlaces = await sortByDrivingDistance(placesResults, CurrentLocation);
 
@@ -174,9 +156,9 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
         id: id
       };
 
-      handleAddressSelected(id, "Pick a location on the map");
       setCategorySearch(categoryResults);
-      setRows(rows.map(row => row.id === id ? { ...row, places: categoryResults } : row));     
+      rows[id - 1].places = categoryResults; 
+      handleAddressSelected(id, "Pick a location on the map");
       
     } catch (error) {
       console.error('Search error:', error);
@@ -199,7 +181,11 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
     });
     } else {
       setCategorySearch(null);
-      setSelectedPOI(null);
+      setSelectedPOI({
+      id: null,
+      name: null,
+      placeId: null
+    });
     }
   };
 
@@ -270,15 +256,6 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
                         </button>
                       </div>
                     </StandaloneSearchBox>
-                  </div>
-                )}
-                 {showSuggestions && (
-                  <div>
-                    {suggestions.map((suggestion, index) => (
-                      <div key={index} onClick={() => handleSuggestionClick(row.id, suggestion)}>
-                        {suggestion}
-                      </div>
-                    ))}
                   </div>
                 )}
               </td>
