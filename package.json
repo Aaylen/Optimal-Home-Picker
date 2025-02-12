@@ -9,18 +9,28 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/x-data-grid": "^7.25.0",
     "@react-google-maps/api": "^2.20.5",
     "dotenv": "^16.4.7",
+    "emoji-picker-react": "^4.12.0",
     "next": "15.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-draggable": "^4.4.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "eslint": "^9",
     "eslint-config-next": "15.1.6"
+  },
+  "overrides": {
+    "@emoji-mart/react": {
+      "react": "19.0.0",
+      "react-dom": "19.0.0"
+    }
   }
 }

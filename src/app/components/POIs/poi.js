@@ -2,49 +2,63 @@ import React, { useState, useRef, useEffect, useContext } from 'react';
 import { StandaloneSearchBox } from '@react-google-maps/api';
 import { POIContext } from '../../context/POIContext.js';
 import styles from './poi.module.css';
+import EmojiPicker from '../Emojis/EmojiPicker.js';
+import CustomDraggable from '../Draggable/CustomDraggable.js';
 
 const DEFAULT_COLORS = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
 
-
 const POI = ({ CurrentAddress, CurrentLocation }) => {
-  const [rows, setRows] = useState([{ id: 1, address: '', distance: '', color: '#FF0000', isCategorySearch: true, places: null, selectedPlaceID: null }]);
+  const [rows, setRows] = useState([{ id: 1, address: '', distance: '', emoji: '📍', isCategorySearch: true, places: null, selectedPlaceID: null, selectedPlaceLocation: null }]);
   const poiContainerRef = useRef(null);
   const nextId = useRef(2);
   const searchBoxRef = useRef(null);
-  const {setCategorySearch} = useContext(POIContext);
-  const {selectedPOI} = useContext(POIContext);
-  const {setSelectedPOI} = useContext(POIContext);
+  const { setEmoji, setCategorySearch, selectedPOI, setSelectedPOI, setPOIsAndEmojis } = useContext(POIContext);
+  const [selectedEmoji, setSelectedEmoji] = useState(null)
+  const [rowIndex, setRowIndex] = useState(1)
+  const [showEmojiPicker, setshowEmojiPicker] = useState(false)
 
   useEffect(() => {
     console.log('CurrentLocation:', CurrentLocation);
   }, [CurrentLocation]);
 
   useEffect(() => {
-    console.log("Rows updated: ", rows);
+    setPOIsAndEmojis(rows.map(row => ({ id: row.id, emoji: row.emoji, location: row.selectedPlaceLocation })));
   }, [rows]);
 
   useEffect(() => {
     if (selectedPOI) {
-      handleAddressSelected(selectedPOI.id, selectedPOI.name, selectedPOI.placeId);
-      console.log("Selected POI:", selectedPOI);
+      try {
+        console.log("This is the Selected POI before I handle address selected:", selectedPOI);
+        handleAddressSelected(
+          selectedPOI.id || null,
+          selectedPOI.name || '',
+          selectedPOI.placeId || null,
+          selectedPOI.location || null
+        );
+      } catch (error) {
+        console.error('Error handling selected POI:', error);
+      }
     }
   }, [selectedPOI]);
 
-
-  const getNextColor = (currentRows) => {
-    const usedColors = new Set(currentRows.map(row => row.color));
-    for (const color of DEFAULT_COLORS) {
-      if (!usedColors.has(color)) return color;
+  useEffect(() => {
+    if (selectedEmoji) {
+      setRows(rows.map(row => row.id === rowIndex ? { ...row, emoji: selectedEmoji } : row));
+      console.log("Selected emoji:", selectedEmoji);
+      setEmoji(selectedEmoji);
     }
-    return DEFAULT_COLORS[0];
+  }, [selectedEmoji, rowIndex]);
+  
+  const handleEmojiSelect = (emoji) => {
+    setSelectedEmoji(emoji.native); 
   };
+  
+  const handlePickerVisibilityChange = (visibility) => {
+    setshowEmojiPicker(visibility)
+  }
 
   const handleAddressChange = (id, address) => {
-    setRows(rows.map(row => row.id === id ? { ...row, address } : row));
-  };
-
-  const handleColorChange = (id, color) => {
-    setRows(rows.map(row => row.id === id ? { ...row, color } : row));
+    setRows(rows.map(row => row.id === id ? { ...row, address: address || '' } : row));
   };
 
   const handleDelete = (id) => {
@@ -58,21 +72,23 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
   const onPlacesChanged = (row) => {
     const places = searchBoxRef.current?.getPlaces();
     if (places?.[0]?.formatted_address) {
-      handleAddressSelected(row.id, places[0].formatted_address);
+      handleAddressSelected(row.id, places[0].formatted_address, places[0].place_id, places[0].geometry.location);
     }
   };
 
-  const handleAddressSelected = (id, address, selectedPlaceID) => {
-    const newRows = rows.map(row => row.id === id ? { ...row, address, selectedPlaceID } : row);
+  const handleAddressSelected = (id, address, selectedPlaceID, selectedPlaceLocation) => {
+    console.log("This is what handleAddressSelected received: id ", id, "address: ", address, "PlaceID: ", selectedPlaceID, "Location: ", selectedPlaceLocation);
+    const newRows = rows.map(row => row.id === id ? { ...row, address, selectedPlaceID, selectedPlaceLocation } : row);
     if (id === rows[rows.length - 1].id) {
       setRows([...newRows, {
         id: nextId.current++,
         address: '',
         distance: '',
-        color: getNextColor(newRows),
+        emoji: '📍',
         isCategorySearch: true,
         places: null,
-        selectedPlaceID: null
+        selectedPlaceID: null,
+        selectedPlaceLocation: null
       }]);
     } else {
       setRows(newRows);
@@ -155,10 +171,11 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
         })),
         id: id
       };
-
+      setEmoji(rows[id - 1].emoji);
       setCategorySearch(categoryResults);
       rows[id - 1].places = categoryResults; 
       handleAddressSelected(id, "Pick a location on the map");
+
       
     } catch (error) {
       console.error('Search error:', error);
@@ -174,17 +191,22 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
     const row = rows.find(row => row.id === id);
     if (row && row.places) {
       setCategorySearch(row.places);
+      setEmoji(row.emoji);
       setSelectedPOI({
         id: row.id,
-        name: row.places.name,
-        placeId: row.selectedPlaceID
-    });
+        name: row.address,
+        placeId: row.selectedPlaceID,
+        location: row.selectedPlaceLocation
+      });
+      console.log("Just set the selected POI: ", selectedPOI, row.id, row.places.name, row.selectedPlaceID, row);
     } else {
       setCategorySearch(null);
+      setEmoji(null);
       setSelectedPOI({
       id: null,
       name: null,
-      placeId: null
+      placeId: null,
+      location: null
     });
     }
   };
@@ -194,7 +216,7 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
       <table className={styles.poiTable}>
         <thead>
           <tr>
-            <th className={styles.colColor}></th>
+            <th className={styles.colEmoji}></th>
             <th className={styles.colLocation}>Location</th>
             <th className={styles.colDistance}>Distance</th>
             <th className={styles.colActions}></th>
@@ -203,12 +225,13 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td className={styles.colColor}>
-                <input
-                  type="color"
-                  value={row.color}
-                  onChange={(e) => handleColorChange(row.id, e.target.value)}
-                />
+              <td className={styles.colEmoji}>
+                <button
+                  className={styles.emojiButton}
+                  onClick={() => { setshowEmojiPicker(!showEmojiPicker); setRowIndex(row.id); }}
+                >
+                  {row.emoji}
+                </button>
               </td>
               <td className={styles.colLocation}>
                 {row.isCategorySearch ? (
@@ -225,7 +248,6 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
                     <button 
                       onClick={() => handleSwitchSearchMode(row.id)} 
                       className={styles.searchButton}
-                      title='Search by Address'
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="white" strokeOpacity="0.45" width="20" height="20">
                         <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
@@ -272,7 +294,15 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
           ))}
         </tbody>
       </table>
+      <div>      
+          <CustomDraggable>
+            <div>
+              <EmojiPicker onEmojiSelect={handleEmojiSelect} pickerVisibility={showEmojiPicker} onVisibilityChange={handlePickerVisibilityChange}/>
+            </div>
+          </CustomDraggable>
+      </div>
     </div>
+    
   );
 };
 

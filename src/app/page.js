@@ -16,6 +16,8 @@ export default function Home() {
   const [markerPosition, setMarkerPosition] = useState(null);
   const [categorySearch, setCategorySearch] = useState([]);
   const [selectedPOI, setSelectedPOI] = useState(null);
+  const [emoji, setEmoji] = useState(null);
+  const [POIsAndEmojis, setPOIsAndEmojis] = useState([]);
 
   const handleResize = (newWidth) => {
     const clampedWidth = Math.max(20, Math.min(80, newWidth));
@@ -28,11 +30,11 @@ export default function Home() {
   };
 
   return (
-    <POIContext.Provider value={{ categorySearch, setCategorySearch, selectedPOI, setSelectedPOI }}>
+    <POIContext.Provider value={{ categorySearch, setCategorySearch, selectedPOI, setSelectedPOI, emoji, setEmoji, POIsAndEmojis, setPOIsAndEmojis }}>
       <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY} libraries={libraries}>
         <main className={styles.main} ref={containerRef}>
           <div style={{ width: `${leftWidth}%` }} className={styles.leftPanel}>
-            <SearchComponent onPlaceSelected={handlePlaceSelected} />
+            <SearchComponent onPlaceSelected={handlePlaceSelected} /> 
           </div>
           <Divider 
             onResize={handleResize}

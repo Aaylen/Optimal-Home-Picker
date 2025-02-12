@@ -7,13 +7,13 @@ const SearchComponent = ({ onPlaceSelected }) => {
   const searchBoxRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
   const [CurrentAddress, setCurrentAddress] = useState('500 El Camino Real, Santa Clara, CA 95053');
-  const [CurrentLocation, setCurrentLocation] = useState({ lat: 37.3496, lng: -121.9390 }); // Default to Santa Clara University
+  const [CurrentLocation, setCurrentLocation] = useState({ lat: 37.3496, lng: -121.9390 });
   const [categoryResults, setCategoryResults] = useState([]);
 
   const handleCategoryResults = (results) => {
     setCategoryResults(results);
   };
-  
+
   const onLoad = (ref) => {
     searchBoxRef.current = ref;
   };
@@ -59,8 +59,37 @@ const SearchComponent = ({ onPlaceSelected }) => {
           lng: place.geometry.location.lng(),
         });
       } else {
-        geocodeAddress(inputValue);
+        // Fetch Autocomplete predictions to select the first one
+        const autocompleteService = new window.google.maps.places.AutocompleteService();
+        autocompleteService.getPlacePredictions({ input: inputValue }, (predictions, status) => {
+          if (status === 'OK' && predictions && predictions.length > 0) {
+            const placesService = new window.google.maps.places.PlacesService(document.createElement('div'));
+            placesService.getDetails({ placeId: predictions[0].place_id }, (place, status) => {
+              if (status === 'OK') {
+                const location = place.geometry.location;
+                setInputValue(place.formatted_address);
+                setCurrentAddress(place.formatted_address);
+                setCurrentLocation({ lat: location.lat(), lng: location.lng() });
+                onPlaceSelected({ lat: location.lat(), lng: location.lng() });
+              } else {
+                geocodeAddress(inputValue);
+              }
+            });
+          } else {
+            geocodeAddress(inputValue);
+          }
+        });
       }
+    } else if (event.key === 'Tab') {
+      event.preventDefault();
+      // Simulate Arrow Down key press to navigate suggestions
+      const arrowDownEvent = new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        code: 'ArrowDown',
+        keyCode: 40,
+        bubbles: true,
+      });
+      event.target.dispatchEvent(arrowDownEvent);
     }
   };
 
@@ -68,25 +97,25 @@ const SearchComponent = ({ onPlaceSelected }) => {
     setInputValue(event.target.value);
   };
 
-return (
+  return (
     <div className={styles.main}>
-        <div className={styles.googleSearchBarArea}>
-            <StandaloneSearchBox onLoad={onLoad} onPlacesChanged={onPlacesChanged}>
-                <div>
-                    <input
-                        className={styles.searchBar}
-                        type="text"
-                        placeholder="Enter Address..."
-                        value={inputValue}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyDown}
-                    />
-                </div>
-            </StandaloneSearchBox>
-        </div>
-        <POI CurrentAddress={CurrentAddress} CurrentLocation={CurrentLocation} onCategoryResults={handleCategoryResults}/>
+      <div className={styles.googleSearchBarArea}>
+        <StandaloneSearchBox onLoad={onLoad} onPlacesChanged={onPlacesChanged}>
+          <div>
+            <input
+              className={styles.searchBar}
+              type="text"
+              placeholder="Enter Address..."
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+        </StandaloneSearchBox>
+      </div>
+      <POI CurrentAddress={CurrentAddress} CurrentLocation={CurrentLocation} onCategoryResults={handleCategoryResults} />
     </div>
-);
+  );
 };
 
 export default SearchComponent;

@@ -10,7 +10,7 @@
 .leftPanel {
   height: 100%;
   overflow: auto;
-  min-width: 33%;
+  min-width: 35%;
   max-width: 80%;
   padding: 5px;
   overflow: hidden;
@@ -21,5 +21,5 @@
   height: 100%;
   overflow: auto;
   min-width: 20%;
-  max-width: 67%;
+  max-width: 65%;
 }
