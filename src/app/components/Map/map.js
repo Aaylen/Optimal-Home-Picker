@@ -8,28 +8,10 @@ const Map = ({ center, markerPosition }) => {
   const { categorySearch, setSelectedPOI, selectedPOI, emoji, POIsAndEmojis } = useContext(POIContext);
 
   useEffect(() => {
-    if (categorySearch) {
-      console.log("Updating map with category results:", categorySearch, emoji, selectedPOI);
+    if(categorySearch){
+      console.log('categorySearch', categorySearch);
     }
   }, [categorySearch]);
-
-  useEffect(() => {
-    if(POIsAndEmojis){
-      console.log("Updating map with POIs and emojis:", POIsAndEmojis, emoji, selectedPOI);
-    }
-  }, [POIsAndEmojis]);
-
-  useEffect(() => {
-    if (selectedPOI) {
-      console.log("SelectedPOI has changed:", selectedPOI);
-    } else {
-      console.log("No POI selected");
-    }
-  }, [selectedPOI]);
-
-  useEffect(() => {
-    console.log("Emoji has changed:", emoji);
-  }, [emoji]);
 
   const onLoad = (mapInstance) => {
     setMap(mapInstance);
@@ -51,9 +33,10 @@ const Map = ({ center, markerPosition }) => {
       id: categorySearch?.id ?? null,
       name: place?.name ?? '',
       placeId: place?.placeId ?? null,
-      location: place?.location ?? null
+      location: place?.location ?? null,
+      drivingDistance: place?.drivingDistance ?? null,
+      drivingDuration: place?.drivingDuration ?? null
     });
-    console.log("Selected POI has been changed to:", place?.name, place?.placeId, place?.location);
   };
 
   const getEmojiIcon = (emoji, isSelected, isHouse) => {

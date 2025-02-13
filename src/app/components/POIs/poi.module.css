@@ -57,7 +57,6 @@
 }
 
 .poiContainer .colEmoji{
-    cursor: pointer;
     border: none;
     background: none;
     padding: 10px;
@@ -67,6 +66,10 @@
 
 .emojiButton{
     background: none;
+    cursor: pointer;
+}
+.emojiButton:hover{
+    opacity: 0.7;
 }
 
 .deleteButton {
@@ -99,6 +102,12 @@
     width: 25%;
 }
 
+.distanceRow {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+  
 .colActions {
     width: 5%;
 }

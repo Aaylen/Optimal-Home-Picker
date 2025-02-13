@@ -12,7 +12,7 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
   const poiContainerRef = useRef(null);
   const nextId = useRef(2);
   const searchBoxRef = useRef(null);
-  const { setEmoji, setCategorySearch, selectedPOI, setSelectedPOI, setPOIsAndEmojis } = useContext(POIContext);
+  const { setEmoji, setCategorySearch, selectedPOI, setSelectedPOI, setPOIsAndEmojis, POISAndEmojis } = useContext(POIContext);
   const [selectedEmoji, setSelectedEmoji] = useState(null)
   const [rowIndex, setRowIndex] = useState(1)
   const [showEmojiPicker, setshowEmojiPicker] = useState(false)
@@ -22,18 +22,25 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
   }, [CurrentLocation]);
 
   useEffect(() => {
-    setPOIsAndEmojis(rows.map(row => ({ id: row.id, emoji: row.emoji, location: row.selectedPlaceLocation })));
+    setPOIsAndEmojis(rows.map(row => ({
+      id: row.id,
+      emoji: row.emoji,
+      location: row.selectedPlaceLocation,
+      drivingDistance: row.drivingDistance,
+      drivingDuration: row.drivingDuration,
+    })));
   }, [rows]);
 
   useEffect(() => {
     if (selectedPOI) {
       try {
-        console.log("This is the Selected POI before I handle address selected:", selectedPOI);
         handleAddressSelected(
           selectedPOI.id || null,
           selectedPOI.name || '',
           selectedPOI.placeId || null,
-          selectedPOI.location || null
+          selectedPOI.location || null,
+          selectedPOI.drivingDistance || null,
+          selectedPOI.drivingDuration || null
         );
       } catch (error) {
         console.error('Error handling selected POI:', error);
@@ -44,7 +51,6 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
   useEffect(() => {
     if (selectedEmoji) {
       setRows(rows.map(row => row.id === rowIndex ? { ...row, emoji: selectedEmoji } : row));
-      console.log("Selected emoji:", selectedEmoji);
       setEmoji(selectedEmoji);
     }
   }, [selectedEmoji, rowIndex]);
@@ -76,9 +82,8 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
     }
   };
 
-  const handleAddressSelected = (id, address, selectedPlaceID, selectedPlaceLocation) => {
-    console.log("This is what handleAddressSelected received: id ", id, "address: ", address, "PlaceID: ", selectedPlaceID, "Location: ", selectedPlaceLocation);
-    const newRows = rows.map(row => row.id === id ? { ...row, address, selectedPlaceID, selectedPlaceLocation } : row);
+  const handleAddressSelected = (id, address, selectedPlaceID, selectedPlaceLocation, drivingDistance, drivingDuration) => {
+    const newRows = rows.map(row => row.id === id ? { ...row, address, selectedPlaceID, selectedPlaceLocation, drivingDistance, drivingDuration } : row);
     if (id === rows[rows.length - 1].id) {
       setRows([...newRows, {
         id: nextId.current++,
@@ -88,7 +93,9 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
         isCategorySearch: true,
         places: null,
         selectedPlaceID: null,
-        selectedPlaceLocation: null
+        selectedPlaceLocation: null,
+        drivingDistance: null,
+        drivingDuration: null,
       }]);
     } else {
       setRows(newRows);
@@ -110,16 +117,17 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
       distanceService.getDistanceMatrix(request, (response, status) => {
         if (status === google.maps.DistanceMatrixStatus.OK) {
           const distances = response.rows[0].elements.map((element, index) => ({
-            place: places[index],
-            distance: element.distance.value,
-            duration: element.duration.value,
+          place: places[index],
+          distance: element.distance.value, // distance in meters
+          duration: element.duration.value, // duration in seconds
+          
           }));
-  
+      
           distances.sort((a, b) => a.distance - b.distance);
           resolve(distances.map(d => ({
-            ...d.place,
-            drivingDistance: d.distance,
-            drivingDuration: d.duration
+        ...d.place,
+        drivingDistance: d.distance,
+        drivingDuration: d.duration
           })));
         } else {
           reject("Distance Matrix API failed: " + status);
@@ -196,9 +204,10 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
         id: row.id,
         name: row.address,
         placeId: row.selectedPlaceID,
-        location: row.selectedPlaceLocation
+        location: row.selectedPlaceLocation,
+        drivingDistance: row.drivingDistance || null,
+        drivingDuration: row.drivingDuration || null
       });
-      console.log("Just set the selected POI: ", selectedPOI, row.id, row.places.name, row.selectedPlaceID, row);
     } else {
       setCategorySearch(null);
       setEmoji(null);
@@ -206,8 +215,10 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
       id: null,
       name: null,
       placeId: null,
-      location: null
-    });
+      location: null,
+      drivingDistance: null,
+      drivingDuration: null
+      });
     }
   };
 
@@ -281,7 +292,20 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
                   </div>
                 )}
               </td>
-              <td className={styles.colDistance}>{row.distance}</td>
+              <td className={styles.colDistance}>
+                {/* <div className={styles.distanceRow}>
+                  <span>{row.drivingDistance && `${(row.drivingDistance / 1609.34).toFixed(1)}`}</span> <span>{row.drivingDistance && `Miles`}</span>
+                </div>
+                <div className={styles.distanceRow}>
+                  <span>{row.drivingDuration && `${Math.round(row.drivingDuration / 60)}`}</span> <span>{row.drivingDuration && `Minutes`}</span>
+                </div> */}
+                {row.drivingDuration && `${Math.round(row.drivingDuration / 60)} Minutes`}
+                <br />
+                {row.drivingDistance && `${(row.drivingDistance / 1609.34).toFixed(1)} Miles`}
+                
+                
+              </td>
+
               <td className={styles.colActions}>
                 <button
                   onClick={() => handleDelete(row.id)}
