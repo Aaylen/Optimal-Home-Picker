@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { StandaloneSearchBox } from '@react-google-maps/api';
 import styles from './search.module.css';
 import POI from '../POIs/poi';
+import Drivability from '../Drivability/drivability';
 
 const SearchComponent = ({ onPlaceSelected }) => {
   const searchBoxRef = useRef(null);
@@ -113,7 +114,14 @@ const SearchComponent = ({ onPlaceSelected }) => {
           </div>
         </StandaloneSearchBox>
       </div>
-      <POI CurrentAddress={CurrentAddress} CurrentLocation={CurrentLocation} onCategoryResults={handleCategoryResults} />
+      <POI
+        CurrentAddress={CurrentAddress}
+        CurrentLocation={CurrentLocation}
+        onCategoryResults={handleCategoryResults}
+      />
+      <div className={styles.flexContainer}>
+        <Drivability/>
+      </div>
     </div>
   );
 };

@@ -5,14 +5,12 @@ import styles from './poi.module.css';
 import EmojiPicker from '../Emojis/EmojiPicker.js';
 import CustomDraggable from '../Draggable/CustomDraggable.js';
 
-const DEFAULT_COLORS = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
-
 const POI = ({ CurrentAddress, CurrentLocation }) => {
-  const [rows, setRows] = useState([{ id: 1, address: '', distance: '', emoji: '📍', isCategorySearch: true, places: null, selectedPlaceID: null, selectedPlaceLocation: null }]);
+  const [rows, setRows] = useState([{ id: 1, address: '', emoji: '📍', isCategorySearch: true, places: null, selectedPlaceID: null, selectedPlaceLocation: null }]);
   const poiContainerRef = useRef(null);
   const nextId = useRef(2);
   const searchBoxRef = useRef(null);
-  const { setEmoji, setCategorySearch, selectedPOI, setSelectedPOI, setPOIsAndEmojis, POISAndEmojis } = useContext(POIContext);
+  const { setEmoji, setCategorySearch, selectedPOI, setSelectedPOI, setPOIsAndEmojis } = useContext(POIContext);
   const [selectedEmoji, setSelectedEmoji] = useState(null)
   const [rowIndex, setRowIndex] = useState(1)
   const [showEmojiPicker, setshowEmojiPicker] = useState(false)
@@ -76,9 +74,15 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
   };
 
   const onPlacesChanged = (row) => {
+    console.log("On places changed running")
     const places = searchBoxRef.current?.getPlaces();
     if (places?.[0]?.formatted_address) {
-      handleAddressSelected(row.id, places[0].formatted_address, places[0].place_id, places[0].geometry.location);
+      if(!row.isCategorySearch) {
+        handleAddressSearch(row.id, places[0].formatted_address);
+      }else{
+        handleAddressSelected(row.id, places[0].formatted_address, places[0].place_id, places[0].geometry.location);
+      }
+      
     }
   };
 
@@ -99,6 +103,7 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
       }]);
     } else {
       setRows(newRows);
+      console.log('Rows:', newRows);
     }
   };
 
@@ -135,6 +140,51 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
       });
     });
   }
+
+  const handleAddressSearch = async (id, address) => {
+    if (!address.trim()) return;
+  
+    try {
+      console.log("Address search running")
+      const geocoder = new window.google.maps.Geocoder();
+      const results = await new Promise((resolve, reject) => {
+        geocoder.geocode({ address }, (results, status) => {
+          if (status === window.google.maps.GeocoderStatus.OK) {
+            resolve(results);
+          } else {
+            reject(new Error(`Geocode failed: ${status}`));
+          }
+        });
+      });
+  
+      const location = results[0].geometry.location;
+  
+      // Use Directions API to get driving distance and duration
+      const directionsService = new window.google.maps.DirectionsService();
+      const directionsResults = await new Promise((resolve, reject) => {
+        directionsService.route({
+          origin: CurrentLocation,
+          destination: location,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+        }, (response, status) => {
+          if (status === window.google.maps.DirectionsStatus.OK) {
+            resolve(response);
+          } else {
+            reject(new Error(`Directions API failed: ${status}`));
+          }
+        });
+      });
+  
+      const route = directionsResults.routes[0].legs[0];
+      const drivingDistance = route.distance.value; // distance in meters
+      const drivingDuration = route.duration.value; // duration in seconds
+  
+      handleAddressSelected(id, address, results[0].place_id, location, drivingDistance, drivingDuration);
+    } catch (error) {
+      console.error('Geocode error:', error);
+    }
+  };
+
 
   const handleCategorySearch = async (id, category) => {
     if (!CurrentAddress || !category.trim()) return;
@@ -192,7 +242,6 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
 
   const handleSwitchSearchMode = (id) => {
     setRows(rows.map(row => row.id === id ? { ...row, isCategorySearch: !row.isCategorySearch } : row));
-    setShowSuggestions(false);
   };
 
   const handleInputFocus = (id) => {
@@ -276,6 +325,7 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
                           placeholder="Enter address..."
                           value={row.address}
                           onChange={(e) => handleAddressChange(row.id, e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddressSearch(row.id, row.address)}
                           className={styles.addressInput}
                         />
                         <button 

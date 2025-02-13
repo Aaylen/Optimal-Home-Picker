@@ -2,6 +2,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import { POIContext } from '@/app/context/POIContext';
+import POI from '../POIs/poi';
 
 const Map = ({ center, markerPosition }) => {
   const [map, setMap] = useState(null);
@@ -12,6 +13,12 @@ const Map = ({ center, markerPosition }) => {
       console.log('categorySearch', categorySearch);
     }
   }, [categorySearch]);
+
+  useEffect(() => {
+    if(POIsAndEmojis){
+      console.log('POIsAndEmojis', POIsAndEmojis);
+    }
+  }, [POIsAndEmojis]);
 
   const onLoad = (mapInstance) => {
     setMap(mapInstance);
