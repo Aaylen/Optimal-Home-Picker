@@ -100,28 +100,31 @@ const SearchComponent = ({ onPlaceSelected }) => {
 
   return (
     <div className={styles.main}>
-      <div className={styles.googleSearchBarArea}>
-        <StandaloneSearchBox onLoad={onLoad} onPlacesChanged={onPlacesChanged}>
-          <div>
-            <input
-              className={styles.searchBar}
-              type="text"
-              placeholder="Enter Address..."
-              value={inputValue}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-            />
+      <div className={styles.flexContainer}>
+          <div className={styles.googleSearchBarArea}>
+              <StandaloneSearchBox onLoad={onLoad} onPlacesChanged={onPlacesChanged}>
+                  <div className={styles.height100}> 
+                      <input
+                          className={styles.searchBar}
+                          type="text"
+                          placeholder="Enter Address..."
+                          value={inputValue}
+                          onChange={handleInputChange}
+                          onKeyDown={handleKeyDown}
+                      />
+                  </div>
+              </StandaloneSearchBox>
           </div>
-        </StandaloneSearchBox>
+          <div className={styles.drivabilityContainer}>
+              <Drivability/>
+          </div>
       </div>
+
       <POI
         CurrentAddress={CurrentAddress}
         CurrentLocation={CurrentLocation}
         onCategoryResults={handleCategoryResults}
       />
-      <div className={styles.flexContainer}>
-        <Drivability/>
-      </div>
     </div>
   );
 };

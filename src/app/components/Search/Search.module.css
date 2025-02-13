@@ -14,17 +14,32 @@
 .searchBar {
     background-color: #16202B; /* Ensure the background color is set correctly */
     border: 1px solid white; /* Ensure the border is always visible */
-    border-radius: 15px;
+    border-radius: 15px 0px 0px 15px;
     color: white; /* Set text color for better visibility */
     padding: 10px; /* Add padding for better appearance */
     width: 100%; /* Make the search bar take the full width of its container */
+    height: 100%;
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    display: flex;
+    flex-direction: row;
 }
 
 .googleSearchBarArea{
     width: 100%;
+    flex: 0 0 70%;
 }
 
-.flexContainer{
+.height100{
+    height: 100%;
+}
+
+.flexContainer {
     width: 100%;
+    display: flex;
+    flex-direction: row;
+}
+
+/* The Drivability component will need a container with this class */
+.drivabilityContainer {
+    flex: 0 0 30%; /* This sets the width to 30% */
 }
