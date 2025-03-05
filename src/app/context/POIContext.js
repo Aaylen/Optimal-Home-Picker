@@ -1,5 +1,5 @@
 import React, { createContext, useState } from "react";
-
+// Commit for the history. I will work on this later :()
 export const POIContext = createContext();
 
 export const POIProvider = ({ children }) => {
