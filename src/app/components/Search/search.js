@@ -6,94 +6,76 @@ import Drivability from '../Drivability/drivability';
 
 const SearchComponent = ({ onPlaceSelected }) => {
   const searchBoxRef = useRef(null);
+  const inputRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
   const [CurrentAddress, setCurrentAddress] = useState('500 El Camino Real, Santa Clara, CA 95053');
   const [CurrentLocation, setCurrentLocation] = useState({ lat: 37.3496, lng: -121.9390 });
-  const [categoryResults, setCategoryResults] = useState([]);
-
-  const handleCategoryResults = (results) => {
-    setCategoryResults(results);
-  };
 
   const onLoad = (ref) => {
     searchBoxRef.current = ref;
   };
 
-  const onPlacesChanged = () => {
-    const places = searchBoxRef.current.getPlaces();
-    if (places && places.length > 0) {
-      const place = places[0];
-      const location = place.geometry.location;
-      setInputValue(place.formatted_address);
-      onPlaceSelected({ lat: location.lat(), lng: location.lng() });
-      setCurrentAddress(place.formatted_address);
-      setCurrentLocation({ lat: location.lat(), lng: location.lng() });
-    }
-  };
-
   const geocodeAddress = (address) => {
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ address }, (results, status) => {
-      if (status === 'OK' && results && results.length > 0) {
-        const location = results[0].geometry.location;
-        setInputValue(results[0].formatted_address);
-        setCurrentAddress(results[0].formatted_address);
-        setCurrentLocation({ lat: location.lat(), lng: location.lng() });
-        onPlaceSelected({ lat: location.lat(), lng: location.lng() });
-      } else {
-        console.error('Geocode was not successful:', status);
-      }
+    return new Promise((resolve, reject) => {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ address }, (results, status) => {
+        if (status === 'OK' && results && results.length > 0) {
+          const location = results[0].geometry.location;
+          resolve(location); 
+        } else {
+          console.error('Geocode was not successful:', status);
+          reject(new Error(`Geocode failed with status: ${status}`));
+        }
+      });
     });
   };
 
+  let isSimulatedEvent = false; 
+
   const handleKeyDown = (event) => {
+    if (isSimulatedEvent) {
+      isSimulatedEvent = false;
+      return; 
+    }
+  
     if (event.key === 'Enter') {
       event.preventDefault();
-      const places = searchBoxRef.current.getPlaces();
-      if (places && places.length > 0) {
-        const place = places[0];
-        setInputValue(place.formatted_address);
-        setCurrentAddress(place.formatted_address);
-        setCurrentLocation({ lat: place.geometry.location.lat(), lng: place.geometry.location.lng() });
-        onPlaceSelected({
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng(),
+      if (inputRef.current) {
+        // Simulate pressing the Down Arrow key to highlight the first prediction
+        const downArrowEvent = new KeyboardEvent('keydown', {
+          key: 'ArrowDown',
+          keyCode: 40,
+          code: 'ArrowDown',
+          bubbles: true,
+          cancelable: true,
         });
-      } else {
-        // Fetch Autocomplete predictions to select the first one
-        const autocompleteService = new window.google.maps.places.AutocompleteService();
-        autocompleteService.getPlacePredictions({ input: inputValue }, (predictions, status) => {
-          if (status === 'OK' && predictions && predictions.length > 0) {
-            const placesService = new window.google.maps.places.PlacesService(document.createElement('div'));
-            placesService.getDetails({ placeId: predictions[0].place_id }, (place, status) => {
-              if (status === 'OK') {
-                const location = place.geometry.location;
-                setInputValue(place.formatted_address);
-                setCurrentAddress(place.formatted_address);
-                setCurrentLocation({ lat: location.lat(), lng: location.lng() });
-                onPlaceSelected({ lat: location.lat(), lng: location.lng() });
-              } else {
-                geocodeAddress(inputValue);
-              }
-            });
-          } else {
-            geocodeAddress(inputValue);
-          }
+        isSimulatedEvent = true; 
+        inputRef.current.dispatchEvent(downArrowEvent);
+  
+        // Simulate pressing the Enter key to select the highlighted prediction
+        const enterEvent = new KeyboardEvent('keydown', {
+          key: 'Enter',
+          keyCode: 13,
+          code: 'Enter',
+          bubbles: true,
+          cancelable: true,
         });
+        isSimulatedEvent = true; 
+        inputRef.current.dispatchEvent(enterEvent);
       }
-    } else if (event.key === 'Tab') {
-      event.preventDefault();
-      // Simulate Arrow Down key press to navigate suggestions
-      const arrowDownEvent = new KeyboardEvent('keydown', {
-        key: 'ArrowDown',
-        code: 'ArrowDown',
-        keyCode: 40,
-        bubbles: true,
-      });
-      event.target.dispatchEvent(arrowDownEvent);
+      const newAddress = event.target.value;
+      setInputValue(newAddress);
+      setCurrentAddress(newAddress);
+      geocodeAddress(newAddress)
+        .then((location) => {
+          setCurrentLocation({ lat: location.lat(), lng: location.lng() });
+          onPlaceSelected({ lat: location.lat(), lng: location.lng() });
+        })
+        .catch((error) => {
+          console.error('Error geocoding address:', error);
+        });
     }
   };
-
   const handleInputChange = (event) => {
     setInputValue(event.target.value);
   };
@@ -102,10 +84,11 @@ const SearchComponent = ({ onPlaceSelected }) => {
     <div className={styles.main}>
       <div className={styles.flexContainer}>
           <div className={styles.googleSearchBarArea}>
-              <StandaloneSearchBox onLoad={onLoad} onPlacesChanged={onPlacesChanged}>
+              <StandaloneSearchBox onLoad={onLoad}>
                   <div className={styles.height100}> 
                       <input
                           className={styles.searchBar}
+                          ref={inputRef}
                           type="text"
                           placeholder="Enter Address..."
                           value={inputValue}
@@ -119,11 +102,10 @@ const SearchComponent = ({ onPlaceSelected }) => {
               <Drivability/>
           </div>
       </div>
-
       <POI
         CurrentAddress={CurrentAddress}
         CurrentLocation={CurrentLocation}
-        onCategoryResults={handleCategoryResults}
+        // onCategoryResults={handleCategoryResults}
       />
     </div>
   );

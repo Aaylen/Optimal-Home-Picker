@@ -1,5 +1,5 @@
 import React, { createContext, useState } from "react";
-// Commit for the history. I will work on this later :()
+
 export const POIContext = createContext();
 
 export const POIProvider = ({ children }) => {
@@ -15,7 +15,7 @@ export const POIProvider = ({ children }) => {
     });
     
     // Initialize emoji with empty string instead of null
-    const [emoji, setEmoji] = useState('📍');
+    const [emoji, setEmoji] = useState('#f08000');
 
     // Wrapper functions to ensure state updates are always properly formatted
     const handleSetCategorySearch = (value) => {

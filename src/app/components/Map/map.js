@@ -1,105 +1,105 @@
-'use client'; 
-import React, { useState, useContext, useEffect } from 'react';
-import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
-import { POIContext } from '@/app/context/POIContext';
-import POI from '../POIs/poi';
+'use client';
+import React, { useState, useEffect } from 'react';
+import { GoogleMap } from '@react-google-maps/api';
 
-const Map = ({ center, markerPosition }) => {
+const Map = ({ center, homeMarker: initialHomeMarker }) => {
+  const [homeMarker, setHomeMarker] = useState(initialHomeMarker);
   const [map, setMap] = useState(null);
-  const { categorySearch, setSelectedPOI, selectedPOI, emoji, POIsAndEmojis } = useContext(POIContext);
+  const [userLocation, setUserLocation] = useState(null);
+  const mapId = process.env.NEXT_PUBLIC_MAP_ID || "DEMO_MAP_ID";
 
+  // Update homeMarker when the prop changes
   useEffect(() => {
-    if(categorySearch){
-      console.log('categorySearch', categorySearch);
+    if (initialHomeMarker) {
+      setHomeMarker(initialHomeMarker);
     }
-  }, [categorySearch]);
+  }, [initialHomeMarker]);
 
+  // Request user's location when the component mounts
   useEffect(() => {
-    if(POIsAndEmojis){
-      console.log('POIsAndEmojis', POIsAndEmojis);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error getting user location:", error);
+          // Fallback to the initial center prop if permission is denied or an error occurs
+        }
+      );
+    } else {
+      console.error("Geolocation is not supported by this browser.");
     }
-  }, [POIsAndEmojis]);
+  }, []); // Empty dependency array ensures this runs once on mount
 
-  const onLoad = (mapInstance) => {
+  // Center the map on the user's location when both map and userLocation are available
+  useEffect(() => {
+    if (map && userLocation) {
+      map.panTo(userLocation);
+    }
+  }, [map, userLocation]);
+
+  // Handle home marker rendering
+  useEffect(() => {
+    let currentMarker = null;
+
+    const loadGoogleMapsLibraries = async () => {
+      if (map && homeMarker) {
+        const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
+
+        if (currentMarker) {
+          currentMarker.map = null;
+          currentMarker = null;
+        }
+
+        const icon = document.createElement("div");
+        icon.innerHTML = '<i class="fa fa-home fa-lg"></i>';
+
+        const faPin = new PinElement({
+          glyph: icon,
+          glyphColor: "#ffffff",
+          background: "#007bff",
+          borderColor: "#0056b3",
+        });
+
+        currentMarker = new AdvancedMarkerElement({
+          map,
+          position: homeMarker,
+          content: faPin.element,
+          title: "Home Marker",
+        });
+      }
+    };
+
+    loadGoogleMapsLibraries();
+
+    return () => {
+      if (currentMarker) {
+        currentMarker.map = null;
+        currentMarker = null;
+      }
+    };
+  }, [map, homeMarker]);
+
+  const handleMapLoad = (mapInstance) => {
     setMap(mapInstance);
   };
-
-  const onUnmount = () => {
-    setMap(null);
-  };
-
-  const mapOptions = {
-    streetViewControl: false,
-    // mapTypeControlOptions: {
-    //   position: window.google.maps.ControlPosition.BOTTOM_CENTER
-    // }
-  };
-
-  const handleCategoryClick = (place) => {
-    setSelectedPOI({
-      id: categorySearch?.id ?? null,
-      name: place?.name ?? '',
-      placeId: place?.placeId ?? null,
-      location: place?.location ?? null,
-      drivingDistance: place?.drivingDistance ?? null,
-      drivingDuration: place?.drivingDuration ?? null
-    });
-  };
-
-  const getEmojiIcon = (emoji, isSelected, isHouse) => {
-    let size = isSelected ? 40 : 28;
-    size = isHouse ? 32 : size;
-  
-    // Create an offscreen canvas
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d");
-  
-    // Set font and draw the emoji
-    ctx.font = `${size}px sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(emoji, size / 2, size / 1.75);
-  
-    // Convert to data URL
-    return {
-      url: canvas.toDataURL(), 
-      scaledSize: new window.google.maps.Size(size, size)
-    };
-  };
-  
 
   return (
     <div style={{ height: '100%', width: '100%', padding: '0', margin: '0' }}>
       <GoogleMap
         mapContainerStyle={{ width: '100%', height: '100%' }}
-        center={center}
+        center={center} // Initial center from props
         zoom={12}
-        onLoad={onLoad}
-        onUnmount={onUnmount}
-        options={mapOptions}
+        onLoad={handleMapLoad}
+        options={{
+          mapId: mapId,
+          colorScheme: 'LIGHT',
+        }}
       >
-        {markerPosition && <Marker position={markerPosition} icon={getEmojiIcon('🏠',false, true)}/>}
-        {categorySearch?.places?.map((place, index) => (
-          <Marker
-            key={index}
-            position={place.location}
-            onClick={() => handleCategoryClick(place)}
-            title={place.name}
-            icon={getEmojiIcon(emoji, selectedPOI?.placeId === place?.placeId, false)}
-          >
-          </Marker>
-        ))}
-        {POIsAndEmojis?.map((poi, index) => (
-          <Marker
-            key={index}
-            position={poi.location}
-            title={poi.name}
-            icon={getEmojiIcon(poi.emoji, selectedPOI?.placeId === poi?.placeId, false)}
-            onClick={() => handleCategoryClick(poi)}
-          />
-        ))}
       </GoogleMap>
     </div>
   );

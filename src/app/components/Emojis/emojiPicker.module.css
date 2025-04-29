@@ -1,0 +1,18 @@
+.colorInput {
+    /* kill the outer border / arrow */
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid white; /* Updated border */
+    border-radius: 4px;
+    cursor: pointer;
+    width: 55px;           /* size is up to you */
+    height: 20px;
+
+}
+  
+/* Chrome / Edge / Safari */
+.colorInput::-webkit-color-swatch-wrapper { padding: 0; }
+.colorInput::-webkit-color-swatch        { border: none; }
+  
+/* Firefox */
+.colorInput::-moz-color-swatch           { border: none; }

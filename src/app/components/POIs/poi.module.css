@@ -64,9 +64,13 @@
     height: 100%;
 }
 
-.emojiButton{
+.emojiButton {
     background: none;
     cursor: pointer;
+    border: 1px solid white;
+    border-radius: 6px;
+    outline: none;
+    box-shadow: none;
 }
 .emojiButton:hover{
     opacity: 0.7;

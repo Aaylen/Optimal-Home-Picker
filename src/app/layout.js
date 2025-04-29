@@ -3,6 +3,10 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <title>Optimal Home Picker</title>
+        <link
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+          rel="stylesheet"
+        />
         <style>
           {`
             body {
