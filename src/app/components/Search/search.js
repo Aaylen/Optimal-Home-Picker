@@ -1,18 +1,34 @@
 import React, { useRef, useState } from 'react';
-import { StandaloneSearchBox } from '@react-google-maps/api';
+import { Autocomplete } from '@react-google-maps/api';
 import styles from './search.module.css';
 import POI from '../POIs/poi';
 import Drivability from '../Drivability/drivability';
 
 const SearchComponent = ({ onPlaceSelected }) => {
-  const searchBoxRef = useRef(null);
+  const autocompleteRef = useRef(null);
   const inputRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
   const [CurrentAddress, setCurrentAddress] = useState('500 El Camino Real, Santa Clara, CA 95053');
   const [CurrentLocation, setCurrentLocation] = useState({ lat: 37.3496, lng: -121.9390 });
 
-  const onLoad = (ref) => {
-    searchBoxRef.current = ref;
+  const handlePlaceChanged = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      
+      if (place && place.formatted_address) {
+        setInputValue(place.formatted_address);
+        setCurrentAddress(place.formatted_address);
+        
+        if (place.geometry && place.geometry.location) {
+          const newLocation = {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng()
+          };
+          setCurrentLocation(newLocation);
+          onPlaceSelected(newLocation);
+        }
+      }
+    }
   };
 
   const geocodeAddress = (address) => {
@@ -76,6 +92,7 @@ const SearchComponent = ({ onPlaceSelected }) => {
         });
     }
   };
+  
   const handleInputChange = (event) => {
     setInputValue(event.target.value);
   };
@@ -83,24 +100,31 @@ const SearchComponent = ({ onPlaceSelected }) => {
   return (
     <div className={styles.main}>
       <div className={styles.flexContainer}>
-          <div className={styles.googleSearchBarArea}>
-              <StandaloneSearchBox onLoad={onLoad}>
-                  <div className={styles.height100}> 
-                      <input
-                          className={styles.searchBar}
-                          ref={inputRef}
-                          type="text"
-                          placeholder="Enter Address..."
-                          value={inputValue}
-                          onChange={handleInputChange}
-                          onKeyDown={handleKeyDown}
-                      />
-                  </div>
-              </StandaloneSearchBox>
-          </div>
-          <div className={styles.drivabilityContainer}>
-              <Drivability/>
-          </div>
+        <div className={styles.googleSearchBarArea}>
+          <Autocomplete
+            onLoad={(ref) => (autocompleteRef.current = ref)}
+            onPlaceChanged={handlePlaceChanged}
+            options={{
+              types: ['address'], // Restrict to addresses only
+              fields: ["address_components", "formatted_address", "geometry", "place_id"],
+            }}
+          >
+            <div className={styles.height100}>
+              <input
+                className={styles.searchBar}
+                ref={inputRef}
+                type="text"
+                placeholder="Enter Address..."
+                value={inputValue}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+              />
+            </div>
+          </Autocomplete>
+        </div>
+        <div className={styles.drivabilityContainer}>
+          <Drivability />
+        </div>
       </div>
       <POI
         CurrentAddress={CurrentAddress}

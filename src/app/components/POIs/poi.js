@@ -5,29 +5,48 @@ import EmojiPicker from '../Emojis/EmojiPicker.js';
 import CustomDraggable from '../Draggable/CustomDraggable.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faIcons } from '../../utils/icons';
+import { Autocomplete } from '@react-google-maps/api';
 
 const POI = ({ CurrentAddress, CurrentLocation }) => {
-  const [rows, setRows] = useState([{ id: 1, address: '', emoji: { icon: 'faBriefcase', color: '#f08000' }, places: null, selectedPlaceID: null, selectedPlaceLocation: null }]);
+  const [rows, setRows] = useState([
+    {
+      id: 1,
+      address: '',
+      emoji: { icon: 'faBriefcase', color: '#f08000' },
+      places: null,
+      selectedPlaceID: null,
+      selectedPlaceLocation: null,
+      drivingDistance: null,
+      drivingDuration: null,
+    },
+  ]);
   const poiContainerRef = useRef(null);
   const nextId = useRef(2);
   const inputRefs = useRef({});
+  const autocompleteRefs = useRef({});
   const { setEmoji, setCategorySearch, selectedPOI, setSelectedPOI, setPOIsAndEmojis } = useContext(POIContext);
   const [selectedEmoji, setSelectedEmoji] = useState(null);
   const [rowIndex, setRowIndex] = useState(1);
-  const [showEmojiPicker, setshowEmojiPicker] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   useEffect(() => {
     console.log('CurrentLocation:', CurrentLocation);
   }, [CurrentLocation]);
 
   useEffect(() => {
-    setPOIsAndEmojis(rows.map(row => ({
-      id: row.id,
-      emoji: row.emoji,
-      location: row.selectedPlaceLocation,
-      drivingDistance: row.drivingDistance,
-      drivingDuration: row.drivingDuration,
-    })));
+    console.log("Rows:", rows);
+  }, [rows]);
+
+  useEffect(() => {
+    setPOIsAndEmojis(
+      rows.map((row) => ({
+        id: row.id,
+        emoji: row.emoji,
+        location: row.selectedPlaceLocation,
+        drivingDistance: row.drivingDistance,
+        drivingDuration: row.drivingDuration,
+      }))
+    );
   }, [rows]);
 
   useEffect(() => {
@@ -49,7 +68,11 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
 
   useEffect(() => {
     if (selectedEmoji) {
-      setRows(rows.map(row => row.id === rowIndex ? { ...row, emoji: selectedEmoji } : row));
+      setRows((prevRows) =>
+        prevRows.map((row) =>
+          row.id === rowIndex ? { ...row, emoji: selectedEmoji } : row
+        )
+      );
     }
   }, [selectedEmoji, rowIndex]);
 
@@ -59,68 +82,147 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
   };
 
   const handlePickerVisibilityChange = (visibility) => {
-    setshowEmojiPicker(visibility);
+    setShowEmojiPicker(visibility);
   };
 
   const handleAddressChange = (id, address) => {
-    setRows(rows.map(row => row.id === id ? { ...row, address: address || '' } : row));
+    setRows((prevRows) =>
+      prevRows.map((row) =>
+        row.id === id ? { ...row, address: address || '' } : row
+      )
+    );
   };
 
   const handleDelete = (id) => {
-    setRows(rows.filter(row => row.id !== id));
+    setRows((prevRows) => prevRows.filter((row) => row.id !== id));
+    delete inputRefs.current[id];
+    delete autocompleteRefs.current[id];
   };
 
-  const handleAddressSelected = (id, address, selectedPlaceID, selectedPlaceLocation, drivingDistance, drivingDuration) => {
-    const newRows = rows.map(row => row.id === id ? { ...row, address, selectedPlaceID, selectedPlaceLocation, drivingDistance, drivingDuration } : row);
-    console.log('New rows:', newRows);
+  const handleAddressSelected = (
+    id,
+    address,
+    selectedPlaceID,
+    selectedPlaceLocation,
+    drivingDistance,
+    drivingDuration
+  ) => {
+    const newRows = rows.map((row) =>
+      row.id === id
+        ? { ...row, address, selectedPlaceID, selectedPlaceLocation, drivingDistance, drivingDuration }
+        : row
+    );
     if (id === rows[rows.length - 1].id) {
-      setRows([...newRows, {
-        id: nextId.current++,
-        address: '',
-        distance: '',
-        emoji: { icon: 'faBriefcase', color: '#f08000' },
-        places: null,
-        selectedPlaceID: null,
-        selectedPlaceLocation: null,
-        drivingDistance: null,
-        drivingDuration: null,
-      }]);
+      setRows([
+        ...newRows,
+        {
+          id: nextId.current++,
+          address: '',
+          distance: '',
+          emoji: { icon: 'faBriefcase', color: '#f08000' },
+          places: null,
+          selectedPlaceID: null,
+          selectedPlaceLocation: null,
+          drivingDistance: null,
+          drivingDuration: null,
+        },
+      ]);
     } else {
       setRows(newRows);
     }
   };
 
-  const initializeAutocomplete = (id) => {
-    if (inputRefs.current[id]) {
-      const autocomplete = new window.google.maps.places.Autocomplete(inputRefs.current[id], {
-        fields: ['geometry', 'formatted_address', 'place_id'],
+  const geocodeAddress = (address) => {
+    return new Promise((resolve, reject) => {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ address }, (results, status) => {
+        if (status === 'OK' && results && results.length > 0) {
+          const location = results[0].geometry.location;
+          resolve(location);
+        } else {
+          console.error('Geocode was not successful:', status);
+          reject(new Error(`Geocode failed with status: ${status}`));
+        }
       });
+    });
+  };
 
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place.geometry && place.geometry.location) {
-          const location = place.geometry.location;
-          const formattedAddress = place.formatted_address || '';
+  let isSimulatedEvent = false;
+
+  const handleKeyDown = (event, rowId) => {
+    if (isSimulatedEvent) {
+      isSimulatedEvent = false;
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const inputElement = inputRefs.current[rowId];
+      if (inputElement) {
+        const downArrowEvent = new KeyboardEvent('keydown', {
+          key: 'ArrowDown',
+          keyCode: 40,
+          code: 'ArrowDown',
+          bubbles: true,
+          cancelable: true,
+        });
+        isSimulatedEvent = true;
+        inputElement.dispatchEvent(downArrowEvent);
+
+        const enterEvent = new KeyboardEvent('keydown', {
+          key: 'Enter',
+          keyCode: 13,
+          code: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        });
+        isSimulatedEvent = true;
+        inputElement.dispatchEvent(enterEvent);
+      }
+
+      const newAddress = event.target.value;
+      handleAddressChange(rowId, newAddress);
+      geocodeAddress(newAddress)
+        .then((location) => {
           handleAddressSelected(
-            id,
-            formattedAddress,
-            place.place_id,
+            rowId,
+            newAddress,
+            null,
             { lat: location.lat(), lng: location.lng() },
             null,
             null
           );
-        } else {
-          console.error('No geometry found for the selected place.');
-        }
-      });
+        })
+        .catch((error) => {
+          console.error('Error geocoding address:', error);
+        });
     }
   };
 
-  useEffect(() => {
-    rows.forEach(row => {
-      initializeAutocomplete(row.id);
-    });
-  }, [rows]);
+  const handlePlaceChanged = (rowId) => {
+    const autocomplete = autocompleteRefs.current[rowId];
+    if (autocomplete) {
+      const place = autocomplete.getPlace();
+      if (place && place.formatted_address) {
+        const address = place.formatted_address;
+        handleAddressChange(rowId, address);
+        if (place.geometry && place.geometry.location) {
+          const newLocation = {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+          };
+          handleAddressSelected(
+            rowId,
+            address,
+            place.place_id || null,
+            newLocation,
+            null,
+            null
+          );
+        }
+      }
+    }
+  };
 
   return (
     <div className={styles.poiContainer} ref={poiContainerRef}>
@@ -141,7 +243,7 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
                   className={styles.emojiButton}
                   style={{ background: row.emoji.color, height: '25px', width: '30px' }}
                   onClick={() => {
-                    setshowEmojiPicker(!showEmojiPicker);
+                    setShowEmojiPicker(!showEmojiPicker);
                     setRowIndex(row.id);
                   }}
                 >
@@ -151,14 +253,24 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
               <td className={styles.colLocation}>
                 <div className={styles.inputContainer}>
                   <div className={styles.inputWrapper}>
-                    <input
-                      type="text"
-                      placeholder="Enter address..."
-                      value={row.address}
-                      onChange={(e) => handleAddressChange(row.id, e.target.value)}
-                      ref={(el) => (inputRefs.current[row.id] = el)}
-                      className={styles.addressInput}
-                    />
+                    <Autocomplete
+                      onLoad={(ref) => (autocompleteRefs.current[row.id] = ref)}
+                      onPlaceChanged={() => handlePlaceChanged(row.id)}
+                      options={{
+                        types: ['address'],
+                        fields: ['address_components', 'formatted_address', 'geometry', 'place_id'],
+                      }}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Enter address..."
+                        value={row.address}
+                        onChange={(e) => handleAddressChange(row.id, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, row.id)}
+                        ref={(el) => (inputRefs.current[row.id] = el)}
+                        className={styles.addressInput}
+                      />
+                    </Autocomplete>
                   </div>
                 </div>
               </td>
@@ -182,7 +294,11 @@ const POI = ({ CurrentAddress, CurrentLocation }) => {
       <div>
         <CustomDraggable>
           <div>
-            <EmojiPicker onEmojiSelect={handleEmojiSelect} pickerVisibility={showEmojiPicker} onVisibilityChange={handlePickerVisibilityChange} />
+            <EmojiPicker
+              onEmojiSelect={handleEmojiSelect}
+              pickerVisibility={showEmojiPicker}
+              onVisibilityChange={handlePickerVisibilityChange}
+            />
           </div>
         </CustomDraggable>
       </div>
